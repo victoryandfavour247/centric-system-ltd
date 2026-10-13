@@ -125,8 +125,16 @@ export function Store({ children }: { children: React.ReactNode }) {
       if (!snap) { backend.current = "local"; setNeedsDataSetup(true); loadLocal(); }
       else {
         backend.current = "supabase"; setNeedsDataSetup(false);
-        if (snap.items.length === 0 && sid) { await dbSeedIfEmpty(seedInventory(), seedSuppliers(), sid); applySnapshot(await dbLoadAll(sid)); }
-        else applySnapshot(snap);
+        if (snap.items.length === 0) {
+          if (sid) {
+            // Shop exists but has no stock yet: seed the full catalogue into this shop.
+            await dbSeedIfEmpty(seedInventory(), seedSuppliers(), sid);
+            applySnapshot(await dbLoadAll(sid));
+          } else {
+            // Signed in but no shop yet (run the roles SQL): still show the catalogue locally.
+            backend.current = "local"; setNeedsDataSetup(true); loadLocal();
+          }
+        } else applySnapshot(snap);
       }
     } catch { backend.current = "local"; setNeedsDataSetup(true); loadLocal(); }
     dataLoaded.current = true;
