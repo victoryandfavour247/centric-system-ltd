@@ -33,6 +33,14 @@
 * { border-color: var(--border); }
 html { scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--text); font-family: var(--font-geist-sans), system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+/* Touch: make every tappable control respond instantly (no 300ms delay, no
+   accidental double-tap zoom) and give a subtle pressed state on tap. */
+button, a, label, select, summary, [role="button"], input[type="checkbox"], input[type="radio"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+button:not(:disabled):active, a:active, [role="button"]:active { opacity: .85; }
 ::selection { background: var(--blue); color: #fff; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; }

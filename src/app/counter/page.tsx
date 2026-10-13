@@ -74,7 +74,7 @@ export default function Counter() {
         <div className="grid gap-2.5 pr-1 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", alignContent: "start" }}>
           {results.map((i) => (
             <button key={i.id} disabled={i.stock === 0} onClick={() => add(i.id)}
-              className="card flex h-fit flex-col p-2 text-left transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[var(--shadow-md)] disabled:opacity-50">
+              className="card flex h-fit flex-col p-2 text-left transition enabled:hover:-translate-y-0.5 enabled:hover:shadow-[var(--shadow-md)] enabled:active:scale-[0.97] disabled:opacity-50">
               <ItemImage item={i} className="aspect-square w-full rounded-lg" />
               <div className="mt-1.5 line-clamp-2 min-h-[32px] text-[12px] font-semibold leading-tight">{i.name}</div>
               <div className="mt-auto flex items-center justify-between pt-1">
