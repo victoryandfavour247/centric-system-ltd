@@ -60,15 +60,21 @@ export async function dbLoadAll(shopId?: string): Promise<DbSnapshot | null> {
   };
 }
 
-/** Seed THIS shop with starter products & suppliers if it has none. */
+/** Seed THIS shop with starter products & suppliers if it has none.
+ *  Product & supplier IDs are namespaced per shop so each shop owns its own
+ *  rows (otherwise the fixed catalogue IDs collide across shops and RLS blocks
+ *  the insert with a 403). */
 export async function dbSeedIfEmpty(items: InventoryItem[], suppliers: Supplier[], shopId?: string) {
   let q = supabase.from("products").select("id", { count: "exact", head: true });
   if (shopId) q = q.eq("shop_id", shopId);
   const { count } = await q;
   if ((count ?? 0) > 0) return;
-  await supabase.from("suppliers").upsert(suppliers.map((s) => withShop(fromSupplier(s), shopId)));
-  for (let i = 0; i < items.length; i += 200) {
-    await supabase.from("products").upsert(items.slice(i, i + 200).map((it) => withShop(fromItem(it), shopId)));
+  const pre = shopId ? shopId.slice(0, 8) + "-" : "";
+  const sup = suppliers.map((s) => ({ ...s, id: pre + s.id }));
+  const its = items.map((i) => ({ ...i, id: pre + i.id, supplierId: i.supplierId ? pre + i.supplierId : i.supplierId }));
+  await supabase.from("suppliers").upsert(sup.map((s) => withShop(fromSupplier(s), shopId)));
+  for (let i = 0; i < its.length; i += 200) {
+    await supabase.from("products").upsert(its.slice(i, i + 200).map((it) => withShop(fromItem(it), shopId)));
   }
 }
 
