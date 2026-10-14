@@ -331,7 +331,8 @@ export function Store({ children }: { children: React.ReactNode }) {
     const po = orders.find((o) => o.id === id); if (!po || po.status === "received") return;
     const now = new Date().toISOString();
     const changed: InventoryItem[] = [];
-    setItems((prev) => prev.map((i) => { const line = po.lines.find((l) => l.itemId === i.id); if (!line) return i; const ni = { ...i, stock: i.stock + line.qty, cost: line.cost || i.cost }; changed.push(ni); return ni; }));
+    for (const line of po.lines) { const it = items.find((i) => i.id === line.itemId); if (it) changed.push({ ...it, stock: it.stock + line.qty, cost: line.cost || it.cost }); }
+    setItems((prev) => prev.map((i) => changed.find((ci) => ci.id === i.id) ?? i));
     const mvs: Movement[] = po.lines.map((l) => { const it = items.find((i) => i.id === l.itemId); return { id: uid("MV"), date: now, itemId: l.itemId, itemName: it?.name ?? l.itemId, type: "receive" as const, qty: l.qty, note: `PO ${po.id}`, byName: user?.name ?? "System" }; });
     setMovements((prev) => [...mvs, ...prev]);
     const updated = { ...po, status: "received" as const, receivedDate: now };
@@ -354,9 +355,11 @@ export function Store({ children }: { children: React.ReactNode }) {
     const change = tendered !== undefined ? Math.max(0, tendered - total) : undefined;
     const now = new Date().toISOString();
     const sale: Sale = { id: uid("SALE"), date: now, cashierId: user?.id ?? "", cashierName: user?.name ?? "Staff", items: lines, subtotal, discount, total, cost, profit, payment: opts.payment, customer: opts.customer?.trim() || undefined, tendered, change };
-    const changed: InventoryItem[] = [];
+    // Compute the stock-deducted items up front (don't rely on the async setState
+    // updater running before we persist — otherwise the stock write is skipped).
+    const changed: InventoryItem[] = cart.map((c) => { const it = items.find((i) => i.id === c.id)!; return { ...it, stock: Math.max(0, it.stock - c.qty) }; });
     setSales((prev) => [sale, ...prev]);
-    setItems((prev) => prev.map((i) => { const c = cart.find((x) => x.id === i.id); if (!c) return i; const ni = { ...i, stock: Math.max(0, i.stock - c.qty) }; changed.push(ni); return ni; }));
+    setItems((prev) => prev.map((i) => changed.find((ci) => ci.id === i.id) ?? i));
     const mvs: Movement[] = lines.map((l) => ({ id: uid("MV"), date: now, itemId: l.id, itemName: l.name, type: "sale" as const, qty: -l.qty, note: `Sale ${sale.id}`, byName: user?.name ?? "Staff" }));
     setMovements((prev) => [...mvs, ...prev]);
     if (sb()) { persist(dbInsertSale(sale, shopIdRef.current)); if (changed.length) persist(dbUpsertItems(changed, shopIdRef.current)); persist(dbInsertMovements(mvs, shopIdRef.current)); }
