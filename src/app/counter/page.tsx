@@ -16,6 +16,7 @@ export default function Counter() {
   const [tendered, setTendered] = useState<number>(0);
   const [scan, setScan] = useState(false);
   const [receipt, setReceipt] = useState<Sale | null>(null);
+  const [cartOpen, setCartOpen] = useState(false); // mobile / tablet slide-in cart
 
   const results = useMemo(() => items.filter((i) => {
     if (cat !== "all" && i.category !== cat) return false;
@@ -37,6 +38,7 @@ export default function Counter() {
   const subtotal = cart.reduce((s, l) => { const it = items.find((i) => i.id === l.id); return s + (it ? it.price * l.qty : 0); }, 0);
   const total = Math.max(0, subtotal - (discount || 0));
   const change = Math.max(0, tendered - total);
+  const count = cart.reduce((a, l) => a + l.qty, 0);
   const cashShort = payment === "cash" && tendered > 0 && tendered < total;
   const cats = Object.keys(CATEGORIES) as CategoryKey[];
   const NOTES = [1, 2, 5, 10, 20, 50, 100, 200];
@@ -50,13 +52,86 @@ export default function Counter() {
 
   const complete = () => {
     const sale = recordSale(cart, { discount, payment, customer, tendered: payment === "cash" ? tendered : undefined });
-    if (sale) { setReceipt(sale); setCart([]); setCustomer(""); setDiscount(0); setPayment("cash"); setTendered(0); }
+    if (sale) { setReceipt(sale); setCart([]); setCustomer(""); setDiscount(0); setPayment("cash"); setTendered(0); setCartOpen(false); }
   };
 
+  const cartListBody = cart.length === 0 ? (
+    <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-[var(--text-soft)]">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18M7 18v2m10-2v2"/></svg>
+      Tap or scan products to add them
+    </div>
+  ) : cart.map((l) => {
+    const it = items.find((i) => i.id === l.id)!;
+    return (
+      <div key={l.id} className="rounded-lg border p-2.5" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2.5">
+          <ItemImage item={it} className="h-10 w-10 shrink-0 rounded-md border" />
+          <div className="min-w-0 flex-1">
+            <div className="line-clamp-1 text-[13px] font-semibold">{it.name}</div>
+            <div className="text-xs text-[var(--text-faint)]">{fmt(it.price)} each</div>
+          </div>
+          <button onClick={() => setQty(l.id, 0)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[var(--text-faint)] hover:bg-[var(--surface-2)] hover:text-[var(--red)]" title="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center rounded-lg border" style={{ borderColor: "var(--border)" }}>
+            <button onClick={() => setQty(l.id, l.qty - 1)} className="grid h-7 w-8 place-items-center text-lg">−</button>
+            <span className="w-8 text-center text-sm font-bold">{l.qty}</span>
+            <button onClick={() => setQty(l.id, l.qty + 1)} disabled={l.qty >= it.stock} className="grid h-7 w-8 place-items-center text-lg disabled:opacity-30">+</button>
+          </div>
+          <span className="whitespace-nowrap text-sm font-black" style={{ color: "var(--navy)" }}>{fmt(it.price * l.qty)}</span>
+        </div>
+      </div>
+    );
+  });
+
+  const cartSummary = (
+    <div className="space-y-3 border-t p-4" style={{ borderColor: "var(--border)" }}>
+      <input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="Customer name (optional)" className="input" />
+      <div className="grid grid-cols-3 gap-1.5">
+        {(Object.keys(PAYMENT_LABEL) as PaymentMethod[]).map((p) => (
+          <button key={p} onClick={() => { setPayment(p); setTendered(0); }} className={`btn btn-sm ${payment === p ? "btn-primary" : "btn-ghost"}`}>{p === "mobile-money" ? "MoMo" : PAYMENT_LABEL[p]}</button>
+        ))}
+      </div>
+      <div className="flex items-center justify-between text-sm"><span className="text-[var(--text-soft)]">Subtotal</span><span className="font-semibold">{fmt(subtotal)}</span></div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-[var(--text-soft)]">Discount</span>
+        <input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))} placeholder="0" className="input !w-24 !py-1 text-right" />
+      </div>
+      <div className="flex items-center justify-between border-t pt-2 text-lg" style={{ borderColor: "var(--border)" }}>
+        <span className="font-bold">Total</span><span className="font-black text-[var(--navy)]">{fmt(total)}</span>
+      </div>
+
+      {payment === "cash" && cart.length > 0 && (
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm font-semibold">Cash received</span>
+            <input type="number" min={0} value={tendered || ""} onChange={(e) => setTendered(Math.max(0, Number(e.target.value)))} placeholder="0" className="input !w-28 !py-1 text-right text-base font-bold" />
+          </div>
+          <div className="mb-2 grid grid-cols-4 gap-1.5">
+            <button onClick={() => setTendered(total)} className="btn btn-ghost !py-1.5 !text-xs col-span-2">Exact {fmt(total)}</button>
+            {NOTES.filter((n) => n >= 5).map((n) => (
+              <button key={n} onClick={() => setTendered((t) => t + n)} className="btn btn-ghost !py-1.5 !text-xs">+{n}</button>
+            ))}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{cashShort ? "Still owing" : "Change due"}</span>
+            <span className="text-lg font-black" style={{ color: cashShort ? "var(--red)" : "var(--green)" }}>{cashShort ? fmt(total - tendered) : fmt(change)}</span>
+          </div>
+        </div>
+      )}
+
+      <button onClick={complete} disabled={cart.length === 0 || cashShort} className="btn btn-success w-full !py-3 text-base">
+        {cashShort ? "Enter enough cash" : `Complete sale · ${fmt(total)}`}
+      </button>
+    </div>
+  );
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-4 lg:items-start">
       {/* catalogue */}
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-col pb-24 lg:pb-0">
         <div className="mb-3 flex gap-2">
           <div className="relative flex-1">
             <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
@@ -87,87 +162,46 @@ export default function Counter() {
         </div>
       </div>
 
-      {/* cart */}
-      <div className="card flex flex-col lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+      {/* cart — desktop sticky side column */}
+      <div className="card hidden flex-col lg:flex lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-[var(--surface)] p-4" style={{ borderColor: "var(--border)" }}>
-          <h2 className="font-bold">Current sale {cart.length > 0 && <span className="text-sm font-normal text-[var(--text-faint)]">· {cart.reduce((a, l) => a + l.qty, 0)} items</span>}</h2>
+          <h2 className="font-bold">Current sale {count > 0 && <span className="text-sm font-normal text-[var(--text-faint)]">· {count} items</span>}</h2>
           {cart.length > 0 && <button onClick={() => setCart([])} className="text-xs font-semibold text-[var(--red)]">Clear</button>}
         </div>
-
-        <div className="space-y-2 p-3">
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-[var(--text-soft)]">
-              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="1.5"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18M7 18v2m10-2v2"/></svg>
-              Tap or scan products to add them
-            </div>
-          ) : cart.map((l) => {
-            const it = items.find((i) => i.id === l.id)!;
-            return (
-              <div key={l.id} className="rounded-lg border p-2.5" style={{ borderColor: "var(--border)" }}>
-                <div className="flex items-center gap-2.5">
-                  <ItemImage item={it} className="h-10 w-10 shrink-0 rounded-md border" />
-                  <div className="min-w-0 flex-1">
-                    <div className="line-clamp-1 text-[13px] font-semibold">{it.name}</div>
-                    <div className="text-xs text-[var(--text-faint)]">{fmt(it.price)} each</div>
-                  </div>
-                  <button onClick={() => setQty(l.id, 0)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[var(--text-faint)] hover:bg-[var(--surface-2)] hover:text-[var(--red)]" title="Remove">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
-                  </button>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <div className="flex items-center rounded-lg border" style={{ borderColor: "var(--border)" }}>
-                    <button onClick={() => setQty(l.id, l.qty - 1)} className="grid h-7 w-8 place-items-center text-lg">−</button>
-                    <span className="w-8 text-center text-sm font-bold">{l.qty}</span>
-                    <button onClick={() => setQty(l.id, l.qty + 1)} disabled={l.qty >= it.stock} className="grid h-7 w-8 place-items-center text-lg disabled:opacity-30">+</button>
-                  </div>
-                  <span className="whitespace-nowrap text-sm font-black" style={{ color: "var(--navy)" }}>{fmt(it.price * l.qty)}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="space-y-3 border-t p-4" style={{ borderColor: "var(--border)" }}>
-          <input value={customer} onChange={(e) => setCustomer(e.target.value)} placeholder="Customer name (optional)" className="input" />
-          <div className="grid grid-cols-3 gap-1.5">
-            {(Object.keys(PAYMENT_LABEL) as PaymentMethod[]).map((p) => (
-              <button key={p} onClick={() => { setPayment(p); setTendered(0); }} className={`btn btn-sm ${payment === p ? "btn-primary" : "btn-ghost"}`}>{p === "mobile-money" ? "MoMo" : PAYMENT_LABEL[p]}</button>
-            ))}
-          </div>
-          <div className="flex items-center justify-between text-sm"><span className="text-[var(--text-soft)]">Subtotal</span><span className="font-semibold">{fmt(subtotal)}</span></div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-[var(--text-soft)]">Discount</span>
-            <input type="number" min={0} value={discount || ""} onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))} placeholder="0" className="input !w-24 !py-1 text-right" />
-          </div>
-          <div className="flex items-center justify-between border-t pt-2 text-lg" style={{ borderColor: "var(--border)" }}>
-            <span className="font-bold">Total</span><span className="font-black text-[var(--navy)]">{fmt(total)}</span>
-          </div>
-
-          {/* cash tendered + change */}
-          {payment === "cash" && cart.length > 0 && (
-            <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold">Cash received</span>
-                <input type="number" min={0} value={tendered || ""} onChange={(e) => setTendered(Math.max(0, Number(e.target.value)))} placeholder="0" className="input !w-28 !py-1 text-right text-base font-bold" />
-              </div>
-              <div className="mb-2 grid grid-cols-4 gap-1.5">
-                <button onClick={() => setTendered(total)} className="btn btn-ghost !py-1.5 !text-xs col-span-2">Exact {fmt(total)}</button>
-                {NOTES.filter((n) => n >= 5).map((n) => (
-                  <button key={n} onClick={() => setTendered((t) => t + n)} className="btn btn-ghost !py-1.5 !text-xs">+{n}</button>
-                ))}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">{cashShort ? "Still owing" : "Change due"}</span>
-                <span className="text-lg font-black" style={{ color: cashShort ? "var(--red)" : "var(--green)" }}>{cashShort ? fmt(total - tendered) : fmt(change)}</span>
-              </div>
-            </div>
-          )}
-
-          <button onClick={complete} disabled={cart.length === 0 || cashShort} className="btn btn-success w-full !py-3 text-base">
-            {cashShort ? "Enter enough cash" : `Complete sale · ${fmt(total)}`}
-          </button>
-        </div>
+        <div className="space-y-2 p-3">{cartListBody}</div>
+        {cartSummary}
       </div>
+
+      {/* mobile / tablet — floating cart bar that opens the slide-in drawer */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-[var(--bg-elev)] p-3 lg:hidden" style={{ borderColor: "var(--border)" }}>
+        <button onClick={() => setCartOpen(true)} className="btn btn-success w-full !justify-between !py-3 text-base">
+          <span className="flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 10h18M7 18v2m10-2v2"/></svg>
+            {count > 0 ? `${count} item${count > 1 ? "s" : ""} in cart` : "Current sale"}
+          </span>
+          <span>{fmt(total)} · View ▸</span>
+        </button>
+      </div>
+
+      {/* mobile / tablet — slide-in cart drawer from the right */}
+      {cartOpen && (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <div className="absolute inset-0 bg-black/50" style={{ animation: "fadeIn .2s ease" }} onClick={() => setCartOpen(false)} />
+          <div className="absolute right-0 top-0 flex h-full w-[90%] max-w-sm flex-col bg-[var(--surface)] shadow-[var(--shadow-lg)]" style={{ animation: "slideInRight .25s ease" }}>
+            <div className="flex items-center justify-between border-b p-4" style={{ borderColor: "var(--border)" }}>
+              <h2 className="font-bold">Current sale {count > 0 && <span className="text-sm font-normal text-[var(--text-faint)]">· {count} items</span>}</h2>
+              <div className="flex items-center gap-3">
+                {cart.length > 0 && <button onClick={() => setCart([])} className="text-xs font-semibold text-[var(--red)]">Clear</button>}
+                <button onClick={() => setCartOpen(false)} className="grid h-8 w-8 place-items-center rounded-lg text-[var(--text-faint)] hover:bg-[var(--surface-2)]" aria-label="Close cart">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 space-y-2 overflow-y-auto p-3">{cartListBody}</div>
+            {cartSummary}
+          </div>
+        </div>
+      )}
 
       {scan && <BarcodeScanner title="Scan product to sell" onClose={() => setScan(false)} onDetected={onScan} />}
       {receipt && <Receipt sale={receipt} onClose={() => setReceipt(null)} />}
