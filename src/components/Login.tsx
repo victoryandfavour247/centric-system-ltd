@@ -61,7 +61,7 @@ export default function Login() {
             ))}
           </ul>
         </div>
-        <div className="relative text-xs text-white/60">© {new Date().getFullYear()} Centric System Limited · Secured by Supabase</div>
+        <div className="relative text-xs text-white/60">© {new Date().getFullYear()} Centric System Limited</div>
       </div>
 
       {/* form side */}
@@ -150,8 +150,6 @@ export default function Login() {
 
             <button disabled={busy} className="btn btn-primary w-full !py-3">{busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}</button>
           </form>
-
-          <p className="mt-5 text-center text-xs text-[var(--text-faint)]">Accounts are stored securely in your Supabase project. The first account created becomes the Administrator.</p>
         </div>
       </div>
     </div>

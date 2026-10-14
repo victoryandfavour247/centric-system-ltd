@@ -5,6 +5,7 @@ import { useStore } from "@/store/Store";
 import { CATEGORIES, can, type InventoryItem, type CategoryKey, type Brand, type MovementType } from "@/lib/inventory";
 import ItemImage from "@/components/ItemImage";
 import BarcodeScanner from "@/components/BarcodeScanner";
+import Select from "@/components/Select";
 
 type StockFilter = "all" | "low" | "out" | "in";
 
@@ -121,16 +122,12 @@ function Products() {
             <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, SKU or barcode…" className="input" style={{ paddingLeft: 36 }} />
           </div>
-          <select aria-label="Filter by brand" value={brand} onChange={(e) => setBrand(e.target.value as Brand | "all")} className="input">
-            <option value="all">All brands</option><option value="NEMTEK">NEMTEK</option><option value="CENTURION">CENTURION</option>
-          </select>
-          <select aria-label="Filter by category" value={cat} onChange={(e) => setCat(e.target.value as CategoryKey | "all")} className="input">
-            <option value="all">All categories</option>
-            {(Object.keys(CATEGORIES) as CategoryKey[]).map((c) => <option key={c} value={c}>{CATEGORIES[c].label}</option>)}
-          </select>
-          <select aria-label="Sort products" value={sort} onChange={(e) => setSort(e.target.value)} className="input">
-            <option value="name">Sort: Name</option><option value="stock">Lowest stock</option><option value="value">Highest value</option><option value="price">Highest price</option>
-          </select>
+          <Select ariaLabel="Filter by brand" value={brand} onChange={(v) => setBrand(v as Brand | "all")}
+            options={[{ value: "all", label: "All brands" }, { value: "NEMTEK", label: "NEMTEK" }, { value: "CENTURION", label: "CENTURION" }]} />
+          <Select ariaLabel="Filter by category" value={cat} onChange={(v) => setCat(v as CategoryKey | "all")}
+            options={[{ value: "all", label: "All categories" }, ...(Object.keys(CATEGORIES) as CategoryKey[]).map((c) => ({ value: c, label: CATEGORIES[c].label }))]} />
+          <Select ariaLabel="Sort products" value={sort} onChange={(v) => setSort(v)}
+            options={[{ value: "name", label: "Sort: Name" }, { value: "stock", label: "Lowest stock" }, { value: "value", label: "Highest value" }, { value: "price", label: "Highest price" }]} />
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3" style={{ borderColor: "var(--border)" }}>
@@ -157,17 +154,17 @@ function Products() {
           <SummaryMetric label="Retail value" value={<Money amount={totals.retail} strong />} />
           {showCost && <SummaryMetric label="Inventory cost" value={<Money amount={totals.cost} strong />} />}
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] table-fixed text-sm md:min-w-[880px] lg:min-w-[1080px]">
+        <div>
+          <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="border-b bg-[var(--surface-2)] text-left text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--text-faint)]" style={{ borderColor: "var(--border)" }}>
-                <th className="px-4 py-3.5">Product</th>
-                <th className="hidden w-[145px] px-4 py-3.5 lg:table-cell">SKU · Location</th>
-                <th className="hidden w-[190px] px-4 py-3.5 md:table-cell">Supplier</th>
-                {showCost && <th className="w-[110px] px-4 py-3.5 text-right">Cost</th>}
-                <th className="w-[110px] px-4 py-3.5 text-right">Price</th>
-                <th className="w-[90px] px-4 py-3.5 text-center">On hand</th>
-                <th className="w-[118px] px-4 py-3.5 text-right">Actions</th>
+                <th className="px-3 py-3.5 sm:px-4">Product</th>
+                <th className="hidden w-[128px] px-4 py-3.5 lg:table-cell">SKU · Location</th>
+                <th className="hidden w-[150px] px-4 py-3.5 md:table-cell">Supplier</th>
+                {showCost && <th className="hidden w-[88px] px-4 py-3.5 text-right xl:table-cell">Cost</th>}
+                <th className="w-[74px] px-2 py-3.5 text-right sm:w-[100px] sm:px-4">Price</th>
+                <th className="w-[56px] px-1 py-3.5 text-center sm:w-[82px] sm:px-4">On hand</th>
+                <th className="w-[96px] px-2 py-3.5 text-right sm:w-[124px] sm:px-4">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -175,22 +172,22 @@ function Products() {
                 const low = i.stock > 0 && i.stock <= i.reorderLevel;
                 return (
                   <tr key={i.id} className="table-row border-b" style={{ borderColor: "var(--border)" }}>
-                    <td className="px-4 py-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <ItemImage item={i} className="h-12 w-12 shrink-0 rounded-xl border" />
+                    <td className="px-3 py-3 sm:px-4">
+                      <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                        <ItemImage item={i} className="h-10 w-10 shrink-0 rounded-xl border sm:h-12 sm:w-12" />
                         <div className="min-w-0"><div className="line-clamp-1 font-bold tracking-[-0.01em]">{i.name}</div><div className="line-clamp-1 text-xs text-[var(--text-faint)]">{i.brand} · {CATEGORIES[i.category].label}</div></div>
                       </div>
                     </td>
                     <td className="hidden px-4 py-3 lg:table-cell"><div className="whitespace-nowrap font-mono text-xs font-semibold text-[var(--text-soft)]">{i.sku}</div><div className="mt-0.5 text-xs text-[var(--text-faint)]">{i.location || "No location"}</div></td>
                     <td className="hidden px-4 py-3 text-[var(--text-soft)] md:table-cell"><span className="line-clamp-1" title={supName(i.supplierId)}>{supName(i.supplierId)}</span></td>
-                    {showCost && <td className="px-4 py-3 text-right"><Money amount={i.cost} muted /></td>}
-                    <td className="px-4 py-3 text-right"><Money amount={i.price} strong /></td>
-                    <td className="px-4 py-3 text-center"><span className={`pill min-w-10 justify-center tabular-nums ${i.stock === 0 ? "pill-red" : low ? "pill-amber" : "pill-green"}`}>{i.stock}{low ? <span aria-label="Low stock" title="Low stock">⚠</span> : null}</span></td>
-                    <td className="px-4 py-3">
+                    {showCost && <td className="hidden px-4 py-3 text-right xl:table-cell"><Money amount={i.cost} muted /></td>}
+                    <td className="px-2 py-3 text-right sm:px-4"><Money amount={i.price} strong /></td>
+                    <td className="px-1 py-3 text-center sm:px-4"><span className={`pill min-w-10 justify-center tabular-nums ${i.stock === 0 ? "pill-red" : low ? "pill-amber" : "pill-green"}`}>{i.stock}{low ? <span aria-label="Low stock" title="Low stock">⚠</span> : null}</span></td>
+                    <td className="px-2 py-3 sm:px-4">
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => setStockFor(i)} className="btn btn-ghost btn-sm">Stock</button>
-                        {mayEdit && <button onClick={() => setEdit(i)} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-[var(--surface-2)]" aria-label={`Edit ${i.name}`} title="Edit"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>}
-                        {mayDelete && <button onClick={() => { if (confirm(`Remove ${i.name}?`)) deleteItem(i.id); }} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--red)] hover:bg-[var(--surface-2)]" aria-label={`Delete ${i.name}`} title="Delete"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>}
+                        <button onClick={() => setStockFor(i)} className="btn btn-ghost btn-sm !px-2 sm:!px-3">Stock</button>
+                        {mayEdit && <button onClick={() => setEdit(i)} className="hidden h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-[var(--surface-2)] sm:grid" aria-label={`Edit ${i.name}`} title="Edit"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>}
+                        {mayDelete && <button onClick={() => { if (confirm(`Remove ${i.name}?`)) deleteItem(i.id); }} className="hidden h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--red)] hover:bg-[var(--surface-2)] sm:grid" aria-label={`Delete ${i.name}`} title="Delete"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>}
                       </div>
                     </td>
                   </tr>
