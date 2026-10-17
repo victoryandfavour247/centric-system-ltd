@@ -123,7 +123,6 @@ export default function Login() {
                 <div className="col-span-2">
                   <label className="label">Manager access code</label>
                   <input className="input" type="password" value={managerCode} onChange={(e) => { setManagerCode(e.target.value); setErr(""); }} placeholder="Required to create a shop" autoComplete="off" />
-                  <p className="mt-1 text-[11px] text-[var(--text-faint)]">Only your organisation&apos;s administrator has this code. It prevents strangers from creating a Manager account.</p>
                 </div>
               </div>
             )}
