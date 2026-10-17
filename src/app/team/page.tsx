@@ -88,10 +88,6 @@ export default function Team() {
         ))}
       </div>
 
-      <div className="card p-4" style={{ background: "var(--blue-50)", borderColor: "#cbd9fb" }}>
-        <p className="text-sm text-[var(--navy)]"><b>You manage this shop.</b> Sales Leaders &amp; Assistants create their own account and choose your shop; approve them above, then set each person&apos;s role and access below. Changes save instantly.</p>
-      </div>
-
       {/* search */}
       <div className="relative max-w-sm">
         <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>

@@ -117,21 +117,27 @@ export function Store({ children }: { children: React.ReactNode }) {
     setItems(s.items); setSuppliers(s.suppliers); setOrders(s.orders); setMovements(s.movements); setSales(s.sales);
   }, []);
 
-  const loadData = useCallback(async (shopId?: string) => {
+  const loadData = useCallback(async (shopId?: string, shopName?: string) => {
     if (dataLoaded.current) return;
     const sid = shopId ?? shopIdRef.current;
+    // Only the demo shop "Centric Store" is pre-loaded with the sample catalogue.
+    // Every other shop starts empty so the Manager adds their own products.
+    const isDemoShop = (shopName ?? "").trim().toLowerCase() === "centric store";
     try {
       const snap = await dbLoadAll(sid);
       if (!snap) { backend.current = "local"; setNeedsDataSetup(true); loadLocal(); }
       else {
         backend.current = "supabase"; setNeedsDataSetup(false);
         if (snap.items.length === 0) {
-          if (sid) {
-            // Shop exists but has no stock yet: seed the full catalogue into this shop.
+          if (sid && isDemoShop) {
+            // Demo shop: seed the full sample catalogue.
             await dbSeedIfEmpty(seedInventory(), seedSuppliers(), sid);
             applySnapshot(await dbLoadAll(sid));
+          } else if (sid) {
+            // A real/new shop: start empty.
+            applySnapshot(snap);
           } else {
-            // Signed in but no shop yet (run the roles SQL): still show the catalogue locally.
+            // Signed in but no shop yet (run the roles SQL): show the catalogue locally.
             backend.current = "local"; setNeedsDataSetup(true); loadLocal();
           }
         } else applySnapshot(snap);
@@ -228,7 +234,7 @@ export function Store({ children }: { children: React.ReactNode }) {
         setUser(u);
         if (greeted.current !== u.id) { greeted.current = u.id; toast(`Welcome, ${u.name.split(" ")[0]}!`); }
         if (u.role === "owner" || u.role === "manager") refreshProfiles();
-        await loadData(u.shopId);
+        await loadData(u.shopId, u.shopName);
       } else { setUser(null); setProfiles([]); greeted.current = null; }
       setReady(true);
     };
