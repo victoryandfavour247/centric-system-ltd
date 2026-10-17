@@ -117,12 +117,15 @@ export function Store({ children }: { children: React.ReactNode }) {
     setItems(s.items); setSuppliers(s.suppliers); setOrders(s.orders); setMovements(s.movements); setSales(s.sales);
   }, []);
 
-  const loadData = useCallback(async (shopId?: string, shopName?: string) => {
+  const loadData = useCallback(async (shopId?: string, shopName?: string, email?: string) => {
     if (dataLoaded.current) return;
     const sid = shopId ?? shopIdRef.current;
-    // Only the demo shop "Centric Store" is pre-loaded with the sample catalogue.
-    // Every other shop starts empty so the Manager adds their own products.
-    const isDemoShop = (shopName ?? "").trim().toLowerCase() === "centric store";
+    // Only Dennis Ayensu Mensah's demo shop "Centric Store" is pre-loaded with the
+    // sample catalogue. Every other shop (even one also named "Centric Store")
+    // starts empty so its Manager adds their own products.
+    const isDemoShop =
+      (shopName ?? "").trim().toLowerCase() === "centric store" &&
+      (email ?? "").trim().toLowerCase() === "profayensu77@gmail.com";
     try {
       const snap = await dbLoadAll(sid);
       if (!snap) { backend.current = "local"; setNeedsDataSetup(true); loadLocal(); }
@@ -234,7 +237,7 @@ export function Store({ children }: { children: React.ReactNode }) {
         setUser(u);
         if (greeted.current !== u.id) { greeted.current = u.id; toast(`Welcome, ${u.name.split(" ")[0]}!`); }
         if (u.role === "owner" || u.role === "manager") refreshProfiles();
-        await loadData(u.shopId, u.shopName);
+        await loadData(u.shopId, u.shopName, u.email);
       } else { setUser(null); setProfiles([]); greeted.current = null; }
       setReady(true);
     };
