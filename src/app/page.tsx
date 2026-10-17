@@ -13,7 +13,7 @@ export default function Dashboard() {
   const role = user!.role;
 
   useEffect(() => { if (role === "owner") refreshProfiles(); }, [role, refreshProfiles]);
-  const pending = useMemo(() => profiles.filter((p) => p.approved === false && p.active !== false && (!user!.shopId || !p.shop_id || p.shop_id === user!.shopId)), [profiles, user]);
+  const pending = useMemo(() => profiles.filter((p) => p.approved === false && p.active !== false && !!user!.shopId && p.shop_id === user!.shopId), [profiles, user]);
 
   const s = useMemo(() => {
     const costVal = items.reduce((a, i) => a + i.cost * i.stock, 0);

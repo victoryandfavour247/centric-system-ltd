@@ -13,9 +13,12 @@ export default function Team() {
 
   useEffect(() => { refreshProfiles(); }, [refreshProfiles]);
 
-  // only this Manager's shop (fall back to everyone if shops aren't set up yet)
+  // strictly this Manager's own shop only (plus themselves). Never other stores.
   const myShop = user!.shopId;
-  const mine = useMemo(() => profiles.filter((p) => !myShop || !p.shop_id || p.shop_id === myShop), [profiles, myShop]);
+  const mine = useMemo(
+    () => profiles.filter((p) => p.id === user!.id || (!!myShop && p.shop_id === myShop)),
+    [profiles, myShop, user],
+  );
 
   const counts = useMemo(() => ({
     owner: mine.filter((p) => p.role === "owner").length,
