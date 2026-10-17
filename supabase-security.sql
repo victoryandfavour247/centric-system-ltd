@@ -21,7 +21,7 @@ alter table public.app_settings enable row level security;
 
 -- Set / change your Manager access code here:
 insert into public.app_settings (key, value)
-values ('manager_signup_code', 'CENTRIC-ADMIN-2025')
+values ('manager_signup_code', 'centric_admin_2026')
 on conflict (key) do update set value = excluded.value;
 
 -- Sign-up trigger: gate Manager (owner) creation behind the secret code.
