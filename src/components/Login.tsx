@@ -12,6 +12,7 @@ export default function Login() {
   const [role, setRole] = useState<Role>("staff");
   const [shopName, setShopName] = useState("");
   const [teamSize, setTeamSize] = useState<number>(1);
+  const [managerCode, setManagerCode] = useState("");
   const [joinShopName, setJoinShopName] = useState("");
   const [shopList, setShopList] = useState<Shop[]>([]);
   const [show, setShow] = useState(false);
@@ -37,7 +38,7 @@ export default function Login() {
       } else {
         if (form.password.length < 6) { setErr("Password must be at least 6 characters."); return; }
         if (form.password !== form.confirm) { setErr("Passwords do not match."); return; }
-        const r = await signUp(form.name, form.email, form.password, role, { shopName, teamSize, joinShopName });
+        const r = await signUp(form.name, form.email, form.password, role, { shopName, teamSize, joinShopName, managerCode });
         if (!r.ok) setErr(r.error ?? "Sign up failed");
         else if (r.needsConfirm) { setNotice("Account created! Please check your email to confirm it, then sign in."); setMode("signin"); }
       }
@@ -119,6 +120,11 @@ export default function Login() {
                 <div className="col-span-2 text-xs font-semibold text-[var(--text-soft)]">Set up your shop</div>
                 <div><label className="label">Shop name</label><input className="input" value={shopName} onChange={(e) => { setShopName(e.target.value); setErr(""); }} placeholder="e.g. Centric Store Accra" /></div>
                 <div><label className="label">People working under you</label><input type="number" min={0} className="input" value={teamSize || ""} onChange={(e) => setTeamSize(Math.max(0, Number(e.target.value)))} placeholder="0" /></div>
+                <div className="col-span-2">
+                  <label className="label">Manager access code</label>
+                  <input className="input" type="password" value={managerCode} onChange={(e) => { setManagerCode(e.target.value); setErr(""); }} placeholder="Required to create a shop" autoComplete="off" />
+                  <p className="mt-1 text-[11px] text-[var(--text-faint)]">Only your organisation&apos;s administrator has this code. It prevents strangers from creating a Manager account.</p>
+                </div>
               </div>
             )}
 

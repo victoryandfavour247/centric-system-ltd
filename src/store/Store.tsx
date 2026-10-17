@@ -29,7 +29,7 @@ interface Ctx {
   shops: Shop[];
   fetchShops: () => Promise<Shop[]>;
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signUp: (name: string, email: string, password: string, role?: Role, opts?: { shopName?: string; teamSize?: number; shopId?: string; joinShopName?: string }) => Promise<{ ok: boolean; error?: string; needsConfirm?: boolean }>;
+  signUp: (name: string, email: string, password: string, role?: Role, opts?: { shopName?: string; teamSize?: number; shopId?: string; joinShopName?: string; managerCode?: string }) => Promise<{ ok: boolean; error?: string; needsConfirm?: boolean }>;
   logout: () => Promise<void>;
   refreshProfiles: () => Promise<void>;
   updateMember: (id: string, patch: { role?: Role; active?: boolean; approved?: boolean }) => Promise<{ ok: boolean; error?: string }>;
@@ -244,13 +244,17 @@ export function Store({ children }: { children: React.ReactNode }) {
     return { ok: true };
   }, []);
 
-  const signUp = useCallback(async (name: string, email: string, password: string, role: Role = "staff", opts?: { shopName?: string; teamSize?: number; shopId?: string; joinShopName?: string }) => {
+  const signUp = useCallback(async (name: string, email: string, password: string, role: Role = "staff", opts?: { shopName?: string; teamSize?: number; shopId?: string; joinShopName?: string; managerCode?: string }) => {
     if (!supabaseConfigured) return { ok: false, error: "Supabase is not configured yet." };
     if (!name.trim()) return { ok: false, error: "Enter your full name." };
+    const cleanEmail = email.trim().toLowerCase();
+    // Proper email format check (the browser's type=email is easy to bypass).
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) return { ok: false, error: "Enter a valid email address." };
     const chosen: Role = (["owner", "manager", "staff"] as Role[]).includes(role) ? role : "staff";
     if (chosen === "owner" && !opts?.shopName?.trim()) return { ok: false, error: "Enter your shop name." };
+    if (chosen === "owner" && !opts?.managerCode?.trim()) return { ok: false, error: "A Manager access code is required to create a shop." };
     const meta: Record<string, unknown> = { full_name: name.trim(), role: chosen };
-    if (chosen === "owner") { meta.shop_name = opts?.shopName?.trim(); meta.team_size = opts?.teamSize ?? 0; }
+    if (chosen === "owner") { meta.shop_name = opts?.shopName?.trim(); meta.team_size = opts?.teamSize ?? 0; meta.manager_code = opts?.managerCode?.trim(); }
     else {
       // Leader / Assistant: find the registered shop by the name they typed
       let shopId = opts?.shopId;
@@ -266,8 +270,14 @@ export function Store({ children }: { children: React.ReactNode }) {
       }
       meta.shop_id = shopId;
     }
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: meta } });
-    if (error) return { ok: false, error: error.message };
+    const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password, options: { data: meta } });
+    if (error) {
+      // A rejected Manager code surfaces as a generic DB error from the trigger.
+      if (chosen === "owner" && /database error|invalid_manager_code|saving new user/i.test(error.message)) {
+        return { ok: false, error: "Manager access code is incorrect. Check it with your administrator." };
+      }
+      return { ok: false, error: error.message };
+    }
     if (!data.session) return { ok: true, needsConfirm: true };
     return { ok: true };
   }, []);
