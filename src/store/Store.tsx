@@ -375,7 +375,7 @@ export function Store({ children }: { children: React.ReactNode }) {
     const now = new Date().toISOString();
     const sale: Sale = { id: uid("SALE"), date: now, cashierId: user?.id ?? "", cashierName: user?.name ?? "Staff", items: lines, subtotal, discount, total, cost, profit, payment: opts.payment, customer: opts.customer?.trim() || undefined, tendered, change };
     // Compute the stock-deducted items up front (don't rely on the async setState
-    // updater running before we persist — otherwise the stock write is skipped).
+    // updater running before we persist - otherwise the stock write is skipped).
     const changed: InventoryItem[] = cart.map((c) => { const it = items.find((i) => i.id === c.id)!; return { ...it, stock: Math.max(0, it.stock - c.qty) }; });
     setSales((prev) => [sale, ...prev]);
     setItems((prev) => prev.map((i) => changed.find((ci) => ci.id === i.id) ?? i));

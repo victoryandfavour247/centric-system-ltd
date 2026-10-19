@@ -162,7 +162,7 @@ export default function Counter() {
         </div>
       </div>
 
-      {/* cart — desktop sticky side column */}
+      {/* cart - desktop sticky side column */}
       <div className="card hidden flex-col lg:flex lg:sticky lg:top-[84px] lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-[var(--surface)] p-4" style={{ borderColor: "var(--border)" }}>
           <h2 className="font-bold">Current sale {count > 0 && <span className="text-sm font-normal text-[var(--text-faint)]">· {count} items</span>}</h2>
@@ -172,7 +172,7 @@ export default function Counter() {
         {cartSummary}
       </div>
 
-      {/* mobile / tablet — floating cart bar that opens the slide-in drawer */}
+      {/* mobile / tablet - floating cart bar that opens the slide-in drawer */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-[var(--bg-elev)] p-3 lg:hidden" style={{ borderColor: "var(--border)" }}>
         <button onClick={() => setCartOpen(true)} className="btn btn-success w-full !justify-between !py-3 text-base">
           <span className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function Counter() {
         </button>
       </div>
 
-      {/* mobile / tablet — slide-in cart drawer from the right */}
+      {/* mobile / tablet - slide-in cart drawer from the right */}
       {cartOpen && (
         <div className="fixed inset-0 z-[60] lg:hidden">
           <div className="absolute inset-0 bg-black/50" style={{ animation: "fadeIn .2s ease" }} onClick={() => setCartOpen(false)} />

@@ -36,7 +36,7 @@ create policy "profiles read own shop" on public.profiles for select to authenti
 create policy "profiles insert self" on public.profiles for insert to authenticated
   with check (id = auth.uid());
 
--- UPDATE: your own row, or — only as the shop Manager — members of your shop
+-- UPDATE: your own row, or - only as the shop Manager - members of your shop
 create policy "profiles update own shop" on public.profiles for update to authenticated
   using (id = auth.uid() or (shop_id is not null and shop_id = public.my_shop_id() and public.my_role() = 'owner'))
   with check (id = auth.uid() or (shop_id is not null and shop_id = public.my_shop_id() and public.my_role() = 'owner'));
