@@ -131,47 +131,57 @@ Every change is written to the database and reflected across devices through rea
 
 ## 9. Project structure
 
+The repository is split into two top level folders: `frontend` (the Next.js application) and `backend` (the Supabase database definitions).
+
 ```
 centric-system-ltd/
-  src/
-    app/
-      page.tsx              Role based dashboards
-      counter/page.tsx      Point of sale counter and receipt
-      inventory/page.tsx    Products list, add and edit, stock adjust
-      movements/page.tsx    Stock log
-      purchase-orders/      Purchase orders
-      suppliers/            Suppliers directory
-      reports/              Reports and valuation
-      accounting/           Accounting (Manager and Sales Leader)
-      team/page.tsx         Team, approvals and role assignment
-      layout.tsx            App shell and metadata
-      globals.css           Design tokens and base styles
-    components/
-      Shell.tsx             Auth gate and page frame
-      Sidebar.tsx           Desktop navigation
-      MobileNav.tsx         Mobile and tablet dropdown navigation
-      Topbar.tsx            Header, alerts and account menu
-      Login.tsx             Sign in and sign up
-      AwaitingApproval.tsx  Pending and declined screens
-      BarcodeScanner.tsx    Camera barcode scanner
-      Select.tsx            Custom styled dropdown
-      Brand.tsx             Logo and wordmark
-      ItemImage.tsx         Product image with fallback
-      Stat.tsx, Toaster.tsx Shared widgets
-    lib/
-      supabase.ts           Supabase client configuration
-      inventory.ts          Types, roles, permissions, seed catalogue
-      products.ts           Product catalogue data
-      db.ts                 Shop aware data access layer and mappers
-    store/
-      Store.tsx             Application state and Supabase integration
-  supabase-setup.sql        Profiles table and base policies
-  supabase-roles.sql        Shops, approval columns and sign up trigger
-  supabase-data.sql         Operational data tables and policies
-  supabase-tenant.sql       Per shop scoping of operational data
-  supabase-security.sql     Manager access code gate
-  supabase-team-isolation.sql  Per shop scoping of the people table
-  supabase-demo-cleanup.sql Reserve demo products for one shop
+  README.md
+  frontend/                         The Next.js application (the client)
+    package.json
+    next.config.ts
+    tsconfig.json
+    .env.local                      Supabase connection values (not committed)
+    public/
+    src/
+      app/
+        page.tsx                    Role based dashboards
+        counter/page.tsx            Point of sale counter and receipt
+        inventory/page.tsx          Products list, add and edit, stock adjust
+        movements/page.tsx          Stock log
+        purchase-orders/            Purchase orders
+        suppliers/                  Suppliers directory
+        reports/                    Reports and valuation
+        accounting/                 Accounting (Manager and Sales Leader)
+        team/page.tsx               Team, approvals and role assignment
+        layout.tsx                  App shell and metadata
+        globals.css                 Design tokens and base styles
+      components/
+        Shell.tsx                   Auth gate and page frame
+        Sidebar.tsx                 Desktop navigation
+        MobileNav.tsx               Mobile and tablet dropdown navigation
+        Topbar.tsx                  Header, alerts and account menu
+        Login.tsx                   Sign in and sign up
+        AwaitingApproval.tsx        Pending and declined screens
+        BarcodeScanner.tsx          Camera barcode scanner
+        Select.tsx                  Custom styled dropdown
+        Brand.tsx                   Logo and wordmark
+        ItemImage.tsx               Product image with fallback
+        Stat.tsx, Toaster.tsx       Shared widgets
+      lib/
+        supabase.ts                 Supabase client configuration
+        inventory.ts                Types, roles, permissions, seed catalogue
+        products.ts                 Product catalogue data
+        db.ts                       Shop aware data access layer and mappers
+      store/
+        Store.tsx                   Application state and Supabase integration
+  backend/                          The Supabase database (the server)
+    supabase-setup.sql              Profiles table and base policies
+    supabase-roles.sql              Shops, approval columns and sign up trigger
+    supabase-data.sql               Operational data tables and policies
+    supabase-tenant.sql             Per shop scoping of operational data
+    supabase-security.sql           Manager access code gate
+    supabase-team-isolation.sql     Per shop scoping of the people table
+    supabase-demo-cleanup.sql       Reserve demo products for one shop
 ```
 
 ## 10. Data model
@@ -191,7 +201,7 @@ Product and supplier identifiers are namespaced per shop when the starter catalo
 
 ## 11. Environment variables
 
-Create a file named `.env.local` in the project root:
+Create a file named `.env.local` inside the `frontend` folder:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
@@ -208,7 +218,7 @@ These variables are read at build time, so after changing them in a hosting prov
 
 ## 12. Supabase setup
 
-Run the SQL files in the Supabase SQL Editor in this order. Each file is safe to run again.
+Run the SQL files from the `backend` folder in the Supabase SQL Editor in this order. Each file is safe to run again.
 
 1. `supabase-setup.sql`: creates the profiles table and its base policies.
 2. `supabase-roles.sql`: creates the shops table, adds shop and approval columns, installs the sign up trigger, and enables realtime for profiles.
@@ -222,9 +232,10 @@ To let new sign ups require a confirmed email, enable Confirm email under Authen
 
 ## 13. Running the project locally
 
-Requirements: Node.js 20 or newer.
+Requirements: Node.js 20 or newer. All application commands run from the `frontend` folder.
 
 ```
+cd frontend
 npm install
 npm run dev
 ```
@@ -235,11 +246,14 @@ The app runs at the address printed in the terminal, usually `http://localhost:3
 
 The project is deployed on Vercel and builds automatically from the GitHub repository.
 
+Because the application lives in the `frontend` folder, set the project Root Directory to `frontend` in the hosting settings.
+
 To make a deployment work:
 
-1. Add the environment variables from section 11 in the hosting project settings for the Production environment.
-2. Trigger a redeploy so the variables are included in the build.
-3. Run the Supabase SQL files from section 12 on the connected project.
+1. Set the Root Directory to `frontend`.
+2. Add the environment variables from section 11 in the hosting project settings for the Production environment.
+3. Trigger a redeploy so the variables are included in the build.
+4. Run the Supabase SQL files from section 12 on the connected project.
 
 ## 15. The demonstration store
 
